@@ -1,0 +1,45 @@
+import numpy as np
+
+class NaiveBayersClassifier:
+    def __init__(self):
+        self.prior = {}
+        self.conditional = {} # {label: {feature: {value: prob}}}
+        self.label = []
+
+    def fit(self, X:np.ndarray, y:np.ndarray) -> None:
+        n_samples, n_features = X.shape
+        self.label = np.unique(y)
+        for i in self.label:
+            self.prior[i] = np.sum(y == i) / n_samples
+            self.conditional[i] = {}
+            for j in range(n_features):
+                self.conditional[i][j] = {}
+                for k in np.unique(X[:,j]):
+                    self.conditional[i][j][k] = np.sum((X[:,j] == k) & (y == i)) / np.sum(y == i)
+
+    def predict(self, X:np.ndarray) -> np.ndarray:
+        n_samples, n_features = X.shape
+        y_pred = []
+        for i in range(n_samples):
+            prob = {}
+            for j in self.label:
+                prob[j] = self.prior[j]
+                for k in range(n_features):
+                    prob[j] *= self.conditional[j][k][X[i,k]]
+            y_pred.append(max(prob, key=prob.get))
+        return np.array(y_pred)
+
+    def score(self, X:np.ndarray, y:np.ndarray) -> float:
+        return np.mean(self.predict(X) == y)
+    
+if __name__ == '__main__':
+    X = np.array([[1, 'S'], [1, 'M'], [1, 'M'], [1, 'S'], [1, 'S'],
+                  [2, 'S'], [2, 'M'], [2, 'M'], [2, 'L'], [2, 'L'],
+                  [3, 'L'], [3, 'M'], [3, 'M'], [3, 'L'], [3, 'L']])
+    y = np.array([-1, -1, 1, 1, -1, -1, -1, 1, 1, 1, 1, 1, 1, 1, -1])
+    X_test = np.array([[2, 'S'], [3, 'M'], [3, 'L']])
+    y_test = np.array([-1, -1, 1])
+    clf = NaiveBayersClassifier()
+    clf.fit(X, y)
+    print(clf.predict(X_test))
+    print(clf.score(X_test, y_test))
